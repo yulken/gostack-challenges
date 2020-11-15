@@ -1,8 +1,6 @@
 import { Router } from 'express';
-import { getCustomRepository, getRepository } from 'typeorm';
+import { getCustomRepository } from 'typeorm';
 import multer from 'multer';
-import AppError from '../errors/AppError';
-import Category from '../models/Category';
 import uploadConfig from '../config/upload';
 
 import TransactionsRepository from '../repositories/TransactionsRepository';
@@ -15,35 +13,9 @@ const upload = multer(uploadConfig);
 
 transactionsRouter.get('/', async (request, response) => {
   const transactionsRepository = getCustomRepository(TransactionsRepository);
-  const categoriesRepository = getRepository(Category);
   const transactions = await transactionsRepository.find();
-  const categories = await categoriesRepository.find();
-  const transactionsWithCategories = transactions.map(transaction => {
-    const category = categories.find(
-      categ => categ.id === transaction.category_id,
-    );
-    if (!category) {
-      throw new AppError('Category not found', 404);
-    }
-    const { id, title, type, value, created_at, updated_at } = transaction;
-    return {
-      id,
-      title,
-      type,
-      value,
-      created_at,
-      updated_at,
-      category: {
-        id: category.id,
-        title: category.title,
-        created_at: category.created_at,
-        updated_at: category.updated_at,
-      },
-    };
-  });
-
   const balance = await transactionsRepository.getBalance();
-  return response.json({ transactions: transactionsWithCategories, balance });
+  return response.json({ transactions, balance });
 });
 
 transactionsRouter.post('/', async (request, response) => {
